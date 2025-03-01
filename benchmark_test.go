@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/cespare/xxhash/v2"
+	// "github.com/cespare/xxhash/v2"
 	"log"
 	"strconv"
 	"testing"
@@ -11,6 +13,7 @@ import (
 
 	v1 "benchmark-gocache/v1"
 	v10 "benchmark-gocache/v10"
+	v11 "benchmark-gocache/v11"
 	v2 "benchmark-gocache/v2"
 	v3 "benchmark-gocache/v3"
 	v4 "benchmark-gocache/v4"
@@ -31,10 +34,35 @@ var cacheV7 = v7.New(10 * time.Minute)
 var cacheV8 = v8.New(10*time.Minute, 8)
 var cacheV9 = v9.New(10 * time.Minute)
 var cacheV10 = v10.New(10 * time.Minute)
+var cacheV11 = v11.New(10 * time.Minute)
 
 var cacheGoCache = gocache.New(10*time.Second, 1*time.Minute)
 var fcacheSize = 100 * 1024 * 1024 // 100MB de cache
 var cacheFreeCache = freecache.NewCache(fcacheSize)
+
+func BenchmarkFNV1aShort(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = cacheV11.Xfnv1aHash("example_ke")
+	}
+}
+
+func BenchmarkXXHashShort(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = xxhash.Sum64String("example_ke")
+	}
+}
+
+func BenchmarkFNV1aLong(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = cacheV11.Xfnv1aHash("example_kex_123445696868098765452323")
+	}
+}
+
+func BenchmarkXXHashLong(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = xxhash.Sum64String("example_kex_123445696868098765452323")
+	}
+}
 
 func BenchmarkGcacheSet1(b *testing.B) {
 	for i := 0; i < b.N; i++ {
@@ -222,6 +250,51 @@ func BenchmarkGcacheSetGetUnr10(b *testing.B) {
 	}
 }
 
+// BenchmarkGcacheSetShort11 measures the performance
+// of Set and Get operations using keys shorts algorithm Xfnv1aHash
+func BenchmarkGcacheSetShort11(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		key := strconv.Itoa(i)
+		cacheV11.Set(key, i, time.Duration(time.Minute))
+	}
+}
+
+// BenchmarkGcacheSetGetShort11 measures the performance
+// of Set and Get operations using keys shorts algorithm Xfnv1aHash
+func BenchmarkGcacheSetGetShort11(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		key := strconv.Itoa(i)
+		cacheV11.Set(key, i, time.Duration(10*time.Minute))
+		i, ok := cacheV11.Get(key)
+		if !ok {
+			b.Errorf("Not found: %v", i)
+		}
+	}
+}
+
+// BenchmarkGcacheSetLong11 measures the performance
+// of Set and Get operations using keys longs algorithm xxHash
+func BenchmarkGcacheSetLong11(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		key := "example_x_12345677889901234567890" + strconv.Itoa(i)
+		cacheV11.Set(key, i, time.Duration(time.Minute))
+	}
+}
+
+// BenchmarkGcacheSetGetLong11 measures the performance
+// of Set and Get operations using keys longs algorithm xxHash
+func BenchmarkGcacheSetGetLong11(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		key := "example_x_12345677889901234567890" + strconv.Itoa(i)
+		cacheV11.Set(key, i, time.Duration(10*time.Minute))
+		i, ok := cacheV11.Get(key)
+		if !ok {
+			b.Errorf("Not found: %v", i)
+		}
+	}
+}
+
+// BenchmarkGo_cacheSet measures the performance
 func BenchmarkGo_cacheSet(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		key := strconv.Itoa(i)
@@ -229,6 +302,7 @@ func BenchmarkGo_cacheSet(b *testing.B) {
 	}
 }
 
+// BenchmarkGo_cacheSetGet measures the performance
 func BenchmarkGo_cacheSetGet(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		key := strconv.Itoa(i)
@@ -240,6 +314,7 @@ func BenchmarkGo_cacheSetGet(b *testing.B) {
 	}
 }
 
+// BenchmarkFreeCacheSet measures the performance
 func BenchmarkFreeCacheSet(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		key := strconv.Itoa(i)
@@ -247,6 +322,7 @@ func BenchmarkFreeCacheSet(b *testing.B) {
 	}
 }
 
+// BenchmarkFreeCacheSetGet measures the performance
 func BenchmarkFreeCacheSetGet(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		key := strconv.Itoa(i)
