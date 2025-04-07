@@ -1,3 +1,11 @@
+// Package gocache provides a high-performance in-memory cache with expiration handling.
+// It is designed for applications that require fast data retrieval with minimal contention.
+//
+// Features:
+// - Concurrent access using sharding to reduce lock contention.
+// - Configurable TTL (Time-To-Live) for automatic expiration of cached items.
+// - Support for permanent (no expiration) cache entries.
+// - Optimized cleanup process to remove expired items efficiently.
 package v9
 
 import (
@@ -6,10 +14,17 @@ import (
 )
 
 const (
-	DefaultExpiration time.Duration = 0    // Uses default TTL if not specified
-	NoExpiration      time.Duration = -1   // Items with no expiration time
-	numShards                       = 8    // Number of shards for concurrent access
-	ringSize                        = 4096 // Size of the expiration ring buffer
+	// DefaultExpiration uses the cache's default TTL if no specific expiration is set.
+	DefaultExpiration time.Duration = 0
+
+	// NoExpiration indicates that the cached item should never expire.
+	NoExpiration time.Duration = -1
+
+	// numShards defines the number of cache partitions to allow concurrent access.
+	numShards = 8
+
+	// ringSize sets the size of the expiration ring buffer for tracking expired items.
+	ringSize = 4096
 )
 
 // ringNode represents an entry in the expiration ring buffer.
@@ -38,8 +53,17 @@ type Cache struct {
 	ttl    time.Duration     // Default time-to-live for cache entries
 }
 
-// New creates a new instance of Cache with a given TTL.
-func New(ttl time.Duration) *Cache {
+// New creates a new instance of Cache with the specified default TTL.
+// If the TTL is greater than 0, a cleanup goroutine is started to periodically remove expired items.
+func New(ttlStr ...time.Duration) *Cache {
+	var ttl time.Duration
+	if len(ttlStr) > 0 {
+		// Use the first duration provided
+		ttl = ttlStr[0]
+	} else {
+		// Fallback to DefaultExpiration if no parameter is passed
+		ttl = DefaultExpiration
+	}
 	c := &Cache{ttl: ttl}
 	for i := 0; i < numShards; i++ {
 		c.shards[i] = &shard{
@@ -53,7 +77,8 @@ func New(ttl time.Duration) *Cache {
 	return c
 }
 
-// hashKey computes a simple hash from the string key using FNV-1a variation.
+// hashKey computes a simple FNV-1a hash from the string key.
+// The hash ensures even distribution across shards.
 func (c *Cache) hashKey(key string) uint32 {
 	var h uint32
 	for i := 0; i < len(key); i++ {
@@ -63,12 +88,15 @@ func (c *Cache) hashKey(key string) uint32 {
 	return h
 }
 
-// getShard selects the shard based on the hash value.
+// getShard selects the shard based on the hashed key.
+// This helps in distributing load and reducing lock contention.
 func (c *Cache) getShard(k uint32) *shard {
 	return c.shards[k%numShards]
 }
 
-// Set inserts a value into the cache with an optional TTL.
+// Set inserts a value into the cache with an optional TTL.//
+// If `ttl` is set to `DefaultExpiration`, the cache's default TTL is applied.
+// If `ttl` is set to `NoExpiration`, the item never expires.
 func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 	var exp int64
 	if ttl == DefaultExpiration {
@@ -88,8 +116,9 @@ func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 	sh.mu.Unlock()
 }
 
-// Get retrieves a value from the cache.
-// If the item has expired, it is deleted and returns (nil, false).
+// Get retrieves a value from the cache.//
+// Returns the stored value and a boolean indicating if the key was found.
+// If the item has expired, it is removed from the cache and (nil, false) is returned.
 func (c *Cache) Get(key string) (interface{}, bool) {
 	hashed := c.hashKey(key)
 	sh := c.getShard(hashed)
@@ -110,7 +139,8 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 	return item.value, true
 }
 
-// Delete removes an item from the cache.
+// Delete removes an item from the cache.//
+// If the key does not exist, no action is taken.
 func (c *Cache) Delete(key string) {
 	hashed := c.hashKey(key)
 	sh := c.getShard(hashed)
@@ -120,7 +150,9 @@ func (c *Cache) Delete(key string) {
 	sh.mu.Unlock()
 }
 
-// cleanup periodically removes expired items from the cache.
+// cleanup runs periodically to remove expired items from the cache.//
+// This function runs as a background goroutine and checks for expired items
+// at intervals of `ttl / 2`, ensuring efficient memory management.
 func (c *Cache) cleanup() {
 	tick := time.NewTicker(c.ttl / 2)
 	defer tick.Stop()
