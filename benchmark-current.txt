@@ -1,0 +1,30 @@
+goos: darwin
+goarch: arm64
+pkg: benchmark-gocache
+cpu: Apple M3 Max
+BenchmarkCurrentSet/gocache-New-16         	40301326	        82.90 ns/op	      88 B/op	       2 allocs/op
+BenchmarkCurrentSet/gocache-NewFast-16     	54742375	        69.49 ns/op	      48 B/op	       2 allocs/op
+BenchmarkCurrentSet/go-cache-16            	59167138	        58.85 ns/op	      24 B/op	       1 allocs/op
+BenchmarkCurrentSet/freecache-16           	63252495	        56.72 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCurrentSet/ristretto-16           	11646207	       289.0 ns/op	     120 B/op	       3 allocs/op
+BenchmarkCurrentSet/bigcache-16            	35666944	       118.3 ns/op	     153 B/op	       0 allocs/op
+BenchmarkCurrentSetGet/gocache-New-16      	26383596	       131.1 ns/op	      88 B/op	       2 allocs/op
+BenchmarkCurrentSetGet/gocache-NewFast-16  	32101988	       114.2 ns/op	      48 B/op	       2 allocs/op
+BenchmarkCurrentSetGet/go-cache-16         	37164838	        96.05 ns/op	      24 B/op	       1 allocs/op
+BenchmarkCurrentSetGet/freecache-16        	31387261	       122.8 ns/op	      16 B/op	       1 allocs/op
+BenchmarkCurrentSetGet/ristretto-16        	 3245379	      1057 ns/op	     240 B/op	       6 allocs/op
+BenchmarkCurrentSetGet/bigcache-16         	23692912	       152.6 ns/op	     154 B/op	       1 allocs/op
+BenchmarkCurrentGetHit/gocache-New-16      	63385536	        57.74 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCurrentGetHit/gocache-NewFast-16  	68264779	        53.90 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCurrentGetHit/go-cache-16         	84638834	        40.37 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCurrentGetHit/freecache-16        	46799058	        74.86 ns/op	      16 B/op	       1 allocs/op
+BenchmarkCurrentGetHit/ristretto-16        	34297854	       107.4 ns/op	      23 B/op	       1 allocs/op
+BenchmarkCurrentGetHit/bigcache-16         	64355096	        58.65 ns/op	      16 B/op	       1 allocs/op
+BenchmarkCurrentGetMiss/gocache-New-16     	270125067	        13.23 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCurrentGetMiss/gocache-NewFast-16 	314481730	        11.40 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCurrentGetMiss/go-cache-16        	941821176	         3.870 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCurrentGetMiss/freecache-16       	225117142	        15.78 ns/op	       0 B/op	       0 allocs/op
+BenchmarkCurrentGetMiss/ristretto-16       	93167799	        39.01 ns/op	      22 B/op	       1 allocs/op
+BenchmarkCurrentGetMiss/bigcache-16        	202728837	        17.59 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	benchmark-gocache	96.602s

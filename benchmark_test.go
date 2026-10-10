@@ -18,6 +18,7 @@ import (
 	v1 "benchmark-gocache/v1"
 	v10 "benchmark-gocache/v10"
 	v11 "benchmark-gocache/v11"
+	v12 "benchmark-gocache/v12"
 
 	// v2 "benchmark-gocache/v2"
 	// v3 "benchmark-gocache/v3"
@@ -43,6 +44,7 @@ var cacheV8 = v8.New(10*time.Minute, 8)
 var cacheV9 = v9.New(10 * time.Minute)
 var cacheV10 = v10.New(10 * time.Minute)
 var cacheV11 = v11.New(10 * time.Minute)
+var cacheV12 = v12.New(10 * time.Minute)
 
 var cacheGoCache = gocache.New(10*time.Second, 1*time.Minute)
 var fcacheSize = 100 * 1024 * 1024 // 100MB de cache
@@ -325,6 +327,23 @@ func BenchmarkGcacheSetGetLong11(b *testing.B) {
 		i, ok := cacheV11.Get(key)
 		if !ok {
 			b.Errorf("Not found: %v", i)
+		}
+	}
+}
+
+func BenchmarkGcacheSet12(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		key := strconv.Itoa(i)
+		cacheV12.Set(key, i, time.Minute)
+	}
+}
+
+func BenchmarkGcacheSetGet12(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		key := strconv.Itoa(i)
+		cacheV12.Set(key, i, 10*time.Minute)
+		if _, ok := cacheV12.Get(key); !ok {
+			b.Errorf("Not found: %s", key)
 		}
 	}
 }

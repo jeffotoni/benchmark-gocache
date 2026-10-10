@@ -1,228 +1,195 @@
+# benchmark-gocache
+
+[![Go Reference](https://pkg.go.dev/badge/github.com/jeffotoni/benchmark-gocache.svg)](https://pkg.go.dev/github.com/jeffotoni/benchmark-gocache)
+[![Go Report Card](https://goreportcard.com/badge/github.com/jeffotoni/benchmark-gocache)](https://goreportcard.com/report/github.com/jeffotoni/benchmark-gocache)
 [![License](https://img.shields.io/github/license/jeffotoni/benchmark-gocache)](https://github.com/jeffotoni/benchmark-gocache/blob/main/LICENSE)
 ![GitHub last commit](https://img.shields.io/github/last-commit/jeffotoni/benchmark-gocache)
+![GitHub contributors](https://img.shields.io/github/contributors/jeffotoni/benchmark-gocache)
 ![GitHub forks](https://img.shields.io/github/forks/jeffotoni/benchmark-gocache?style=social)
-![GitHub stars](https://img.shields.io/github/stars/jeffotoni/benchmark-gocache)
+![GitHub stars](https://img.shields.io/github/stars/jeffotoni/benchmark-gocache?style=social)
 
-# 🚀💕 Benchmarks for Go In-Memory Caches
+Reproducible benchmarks for the current `gocache` implementation and selected
+Go in-memory cache libraries.
 
-This repository provides a comprehensive benchmark suite comparing **nine custom cache implementations** from [`jeffotoni/gocache`](https://github.com/jeffotoni/gocache) (versions `v1` through `v9`), plus two well-known open-source libraries:
+The current comparison is intentionally focused on two `gocache` APIs:
 
-- [`patrickmn/go-cache`](https://github.com/patrickmn/go-cache)
-- [`coocood/freecache`](https://github.com/coocood/freecache)
+- `New`: the safe default implementation. It preserves the original key and
+  keeps different keys isolated even when their hashes collide.
+- `NewFast`: the explicit legacy hash-only implementation. It has lower
+  overhead, but different keys that produce the same hash can overwrite each
+  other.
 
-All tests are run on an **Apple M3 Max** machine (Darwin/arm64) to measure both **1-second** and **3-second** benchmark performance (`-benchtime=1s` and `-benchtime=3s`).
+The historical implementations in `v1` through `v12` are kept for research
+and regression comparisons. They are not part of the current comparison and
+should not be used to select the current default API.
 
-## Why Use an In-Memory Cache?
+## Current Implementations
 
-- **Faster Access**: In-memory caches reduce latency by storing frequently accessed data directly in memory, avoiding repeated database or external service calls.
-- **Reduced Load**: Caching lowers the workload on databases and APIs, improving overall system throughput.
-- **Quick Expiration**: In-memory caches are best for *ephemeral* data where occasional staleness is tolerable, and items can expire quickly.
+| Implementation | Role |
+|----------------|------|
+| `gocache-New` | Safe current API, collision-aware storage |
+| `gocache-NewFast` | Legacy hash-only API, opt-in performance variant |
+| `go-cache` | `patrickmn/go-cache` |
+| `freecache` | `coocood/freecache` |
+| `ristretto` | `dgraph-io/ristretto` |
+| `bigcache` | `allegro/bigcache` |
 
-## Cache Implementations Tested
+## Methodology
 
-We benchmarked nine versions from [`jeffotoni/gocache`](https://github.com/jeffotoni/gocache), each using different concurrency strategies, expiration approaches, and internal data structures. Additionally, we tested:
+The current benchmark suite uses the same workload for all implementations:
 
-- **`go-cache`**: [patrickmn/go-cache](https://github.com/patrickmn/go-cache)
-- **`freecache`**: [coocood/freecache](https://github.com/coocood/freecache)
+| Parameter | Value |
+|-----------|-------|
+| Key count | 4096 hit keys and 4096 miss keys |
+| Key pattern | `benchmark:key:<n>` and `benchmark:miss:<n>` |
+| Payload | `[]byte("benchmark-value")` |
+| Item TTL | 10 minutes |
+| Benchmark duration | 3 seconds per sub-benchmark |
+| Architecture | Apple M3 Max, Darwin/arm64 |
+| Go runtime | Go 1.27.1 in the latest recorded run |
+| Parallelism | `GOMAXPROCS=16` in the latest recorded run |
 
-Below is a snippet showing how the caches are instantiated in our benchmarking suite:
+The measured operations are:
 
-```go
-var cacheV1 = v1.New(10 * time.Minute)
-var cacheV2 = v2.New[string, int](10*time.Minute, 0)
-var cacheV3 = v3.New(10*time.Minute, 1*time.Minute)
-var cacheV4 = v4.New(10 * time.Minute)
-var cacheV5 = v5.New(10 * time.Minute)
-var cacheV6 = v6.New(10 * time.Minute)
-var cacheV7 = v7.New(10 * time.Minute)
-var cacheV8 = v8.New(10*time.Minute, 8)
-var cacheV9 = v9.New(10 * time.Minute)
+- `Set`: insert or replace a value.
+- `Set/Get`: write a value and immediately read the same key.
+- `Get hit`: read keys populated before the timed section.
+- `Get miss`: read keys that were not populated.
 
-// Third-party libraries
-var cacheGoCache = gocache.New(10*time.Second, 1*time.Minute)
-var fcacheSize = 100 * 1024 * 1024 // 100MB cache
-var cacheFreeCache = freecache.NewCache(fcacheSize)
-```
+All setup work is outside the timed section. `ristretto` is configured with the
+same 10-minute TTL through `SetWithTTL`. Because its writes are asynchronous,
+`Set/Get` calls `Wait()` before `Get`; this measures confirmed read-after-write
+behavior instead of accepting a false miss.
 
-Each version of gocache implements different optimizations (locking, sharding, ring buffers, etc.) to analyze performance trade-offs.
+The libraries use their native APIs and storage models. Therefore, the results
+are an operational comparison, not a claim that every implementation has
+identical internal memory behavior. Always consider correctness, eviction,
+TTL semantics and allocation cost together with `ns/op`.
 
-Example Benchmark Function
+## Latest Results
 
-Below is an example benchmark test used for Version 1 (v1), focusing on both Set() and Get():
-
-```go
-//The result wiil BenchmarkGcacheSet1(b *testing.B)
-func BenchmarkGcacheSet1(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		key := strconv.Itoa(i)
-		cacheV1.Set(key, i, time.Duration(time.Minute))
-	}
-}
-
-//The result wiil BenchmarkGcacheSetGet1(b *testing.B)
-func BenchmarkGcacheSetGet1(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		key := strconv.Itoa(i)
-		cacheV1.Set(key, i, 10*time.Minute)
-		i, ok := cacheV1.Get(key)
-		if !ok {
-			log.Printf("Not Found %v", i)
-		}
-	}
-}
-...
-```
-
-Note: Similar benchmark functions are repeated for v2 through v9, plus go-cache and freecache.
-
-## Benchmark de Cache em Go  
-**Architecture:** Apple M3 Max (arm64)
-**Package:** `benchmark-gocache`
+The following snapshot was generated after aligning the `ristretto` TTL:
 
 ```sh
-$ go test -bench=. -benchtime=5s -benchmem
+go test -run '^$' -bench '^BenchmarkCurrent' -benchmem -benchtime=3s -count=1
 ```
 
-# 📊 Go Cache Benchmark Comparison Freecache, Ristretto, Bigcache and Go-cache
+Lower `ns/op` is better. `B/op` and `allocs/op` are available in
+`benchmark-current.txt`.
 
-This benchmark compares several Go in-memory caching libraries using `go test -bench` on an Apple M3 Max (arm64) CPU.  
-Each implementation is tested for raw **Set** performance and **Set/Get** combined performance.  
-The values reflect **nanoseconds per operation**, **allocations**, and **bytes per op** under high concurrency (`GOMAXPROCS=16`).
+| Implementation | Set ns/op | Set/Get ns/op | Get hit ns/op | Get miss ns/op |
+|----------------|----------:|--------------:|--------------:|---------------:|
+| gocache New | 82.90 | 131.1 | 57.74 | 13.23 |
+| gocache NewFast | 69.49 | 114.2 | 53.90 | 11.40 |
+| go-cache | 58.85 | 96.05 | 40.37 | 3.870 |
+| freecache | 56.72 | 122.8 | 74.86 | 15.78 |
+| ristretto | 289.0 | 1057 | 107.4 | 39.01 |
+| bigcache | 118.3 | 152.6 | 58.65 | 17.59 |
 
----
+![Current cache benchmark comparison](./graphic-current-comparison.svg)
 
-| **Implementation**     | **Set Ops**     | **Set ns/op** | **Set/Get Ops** | **Set/Get ns/op** | **Observations**                                 |
-|------------------------|------------------|----------------|------------------|--------------------|--------------------------------------------------|
-| **gocache V1**         | 28,414,197       | 338.6 ns/op    | 22,687,808       | 294.9 ns/op        | Baseline version — decent speed, moderate allocs |
-| **gocache V8**         | 26,022,742       | 364.5 ns/op    | 15,105,789       | 393.6 ns/op        | High memory cost, TTL enabled                    |
-| **gocache V9**         | 44,026,141       | 265.4 ns/op    | 23,528,972       | 270.0 ns/op        | 🏆 **Fastest write throughput**                  |
-| **gocache V10**        | 19,749,439       | 393.2 ns/op    | 16,217,510       | 495.9 ns/op        | ❌ Higher allocation and latency                  |
-| **gocache V11 (Short)**| 39,719,458       | 264.2 ns/op    | 23,308,189       | 265.4 ns/op        | ⚡ Short TTL — very fast overall                  |
-| **gocache V11 (Long)** | 22,334,095       | 348.8 ns/op    | 18,338,124       | 319.7 ns/op        | Balanced long TTL setup                          |
-| **go-cache**           | 25,669,981       | 392.5 ns/op    | 20,485,022       | 306.0 ns/op        | Stable, but slower than newer gocache versions   |
-| **freecache**          | 41,543,706       | 380.3 ns/op    | 14,433,577       | 425.2 ns/op        | 🚀 Fast writes, significantly slower reads        |
-| **ristretto**          | 30,257,541       | 352.3 ns/op    | 10,055,701       | 547.8 ns/op        | 🧠 TinyLFU eviction, high allocation per op       |
-| **bigcache**           | 30,260,250       | 320.6 ns/op    | 14,382,721       | 354.6 ns/op        | 🔥 Very consistent, low GC overhead               |
+### Interpretation
 
----
+- `NewFast` is faster than safe `New`, but it must only be used when the
+  caller accepts the hash-collision trade-off.
+- `go-cache` and `freecache` have the lowest `Set` latency in this run.
+- `go-cache` has the lowest `Get hit` and `Get miss` latency in this run.
+- `New` remains competitive with `bigcache` and `ristretto` for reads while
+  preserving exact key isolation.
+- `ristretto` is much slower in `Set/Get` because the benchmark waits for its
+  asynchronous write to become observable before reading.
 
-### 🧠 Notes:
+These numbers are machine-, Go-version- and workload-dependent. They are a
+snapshot, not a universal ranking.
 
-- `gocache` is a custom in-memory cache optimized for concurrency, modularity, and optional TTL.
-- `freecache`, `go-cache`, `bigcache`, and `ristretto` are popular open-source libraries with different focuses (size control, expiration, LFU, etc).
-- **Set/Get** benchmarks include an immediate `Get()` call after each `Set()`.
-- Allocation and GC behavior differ drastically across libraries, especially with TTL and internal eviction mechanisms.
+## Reproduce
 
----
-
-## 🚀 1-Second Benchmarks
+Run the current suite:
 
 ```sh
-$ go test -bench=. -benchtime=1s
+go test -run '^$' -bench '^BenchmarkCurrent' -benchmem -benchtime=3s -count=1
 ```
 
-| **Implementation** | **Set Ops**    | **Set ns/op** | **Set/Get Ops** | **Set/Get ns/op** | **Observations**                      |
-|--------------------|----------------|---------------|-----------------|-------------------|---------------------------------------|
-| **gocache V1**     | 6,459,714      | 259.4 ns/op   | 5,062,861       | 245.0 ns/op       | Fast reads, decent writes             |
-| **gocache V2**     | 6,597,314      | 239.5 ns/op   | 4,175,704       | 280.4 ns/op       | Good write speed, average read        |
-| **gocache V3**     | 7,094,665      | 259.7 ns/op   | 4,746,934       | 281.6 ns/op       | Balanced performance                  |
-| **gocache V4**     | 4,644,594      | 324.4 ns/op   | 3,571,759       | 330.9 ns/op       | ❌ Slower (sync.Map)                  |
-| **gocache V5**     | 6,311,216      | 252.6 ns/op   | 4,714,106       | 278.7 ns/op       | Solid all-around                      |
-| **gocache V6**     | 7,532,767      | 262.6 ns/op   | 4,865,896       | 256.2 ns/op       | 🔥 Great concurrency                  |
-| **gocache V7**     | 8,026,825      | 222.4 ns/op   | 4,978,083       | 244.3 ns/op       | 🏆 **Best write** (1s), fast reads    |
-| **gocache V8**     | 4,708,249      | 309.3 ns/op   | 2,513,566       | 399.7 ns/op       | ❌ Slower overall                     |
-| **gocache V9**     | 9,295,434      | 215.9 ns/op   | 5,096,511       | 272.7 ns/op       | 🏆 **Fastest write** (lowest ns/op)   |
-| **go-cache**       | 6,463,236      | 291.6 ns/op   | 4,698,109       | 290.7 ns/op       | Solid library, slower than V7/V9      |
-| **freecache**      | 5,803,242      | 351.1 ns/op   | 2,183,834       | 469.7 ns/op       | 🚀 Decent writes, poor reads          |
-
-## 🚀 3-Second Benchmarks
+Save a raw result file:
 
 ```sh
-$ go test -bench=. -benchtime=3s
+go test -run '^$' -bench '^BenchmarkCurrent' -benchmem -benchtime=3s -count=1 \
+  | tee benchmark-current.txt
 ```
 
-| **Implementation** | **Set Ops**     | **Set ns/op** | **Get Ops**     | **Get ns/op** | **Observations**                     |
-|--------------------|-----------------|---------------|-----------------|---------------|--------------------------------------|
-| **gocache V1**     | 17,176,026      | 338.5 ns/op   | 13,891,083      | 268.6 ns/op   | Fast read, solid write               |
-| **gocache V2**     | 16,457,449      | 318.5 ns/op   | 12,379,336      | 304.4 ns/op   | Good write speed, average read       |
-| **gocache V3**     | 20,858,042      | 310.8 ns/op   | 14,042,400      | 287.1 ns/op   | Balanced, efficient                  |
-| **gocache V4**     | 15,255,268      | 422.4 ns/op   | 8,882,214       | 406.3 ns/op   | ❌ Slow (sync.Map)                   |
-| **gocache V5**     | 20,500,326      | 348.9 ns/op   | 12,597,715      | 271.7 ns/op   | Good balance                         |
-| **gocache V6**     | 21,767,736      | 341.4 ns/op   | 13,085,462      | 297.3 ns/op   | 🔥 Strong concurrency                |
-| **gocache V7**     | 27,229,544      | 252.4 ns/op   | 14,574,768      | 268.6 ns/op   | 🏆 **Best write** (3s)               |
-| **gocache V8**     | 15,796,894      | 383.5 ns/op   | 8,927,028       | 408.8 ns/op   | ❌ Slower overall                    |
-| **gocache V9**     | 24,809,947      | 252.1 ns/op   | 13,225,228      | 275.7 ns/op   | 🏆 **Very fast write**, good read    |
-| **go-cache**       | 15,594,752      | 375.4 ns/op   | 14,289,182      | 269.7 ns/op   | 🚀 Excellent reads, slower writes    |
-| **freecache**      | 13,303,050      | 402.3 ns/op   | 8,903,779       | 421.4 ns/op   | ❌ Decent write, slow read           |
+Repeat the run to observe variance:
 
-## 🏅 Benchmark Icons Guide  
+```sh
+go test -run '^$' -bench '^BenchmarkCurrent' -benchmem -benchtime=3s -count=5
+```
 
-These icons indicate key **performance insights** from our benchmarks:  
+If `benchstat` is installed, compare repeated runs with:
 
-- 🏆 **Top Performance** → Best result in a specific category (fastest read/write).  
-- ❌ **Underperformance** → Notably slower compared to other implementations.  
-- 🔥 **Balanced & Scalable** → Strong concurrency, optimized trade-offs.  
-- 🚀 **High Speed** → Impressive performance, but not always the absolute fastest.  
+```sh
+go test -run '^$' -bench '^BenchmarkCurrent' -benchmem -benchtime=3s -count=5 \
+  > benchmark-current-count5.txt
+benchstat benchmark-current-count5.txt
+```
 
-💡 Use these indicators to **quickly identify the strengths and weaknesses** of each cache version!  
+Run the full test suite, including the historical packages:
 
-## 🚀 Key Highlights  
+```sh
+go test ./...
+```
 
-✅ **Best Write Performance**:  
-   - 🏆 **V7 and V9** consistently deliver the **fastest writes** (`lowest ns/op` in Set benchmarks).  
-   - **V9** achieves top speeds while maintaining strong read performance.  
+The `Makefile` provides shortcuts for the current benchmark and test suite.
 
-✅ **Best Read Performance**:  
-   - **V1 and go-cache** often provide **the lowest `ns/op` in Get benchmarks**, making them excellent choices for read-heavy workloads.  
-   - **go-cache** remains a strong competitor in retrieval speed.  
+## Repository Layout
 
-⚠️ **Slower Performance Observed**:  
-   - ❌ **V4 (`sync.Map`) and V8** struggle in both read and write speeds, making them less suitable for high-performance applications.  
-   - **freecache** performs well in **writes** but has significantly **slower read speeds**.  
+| Path | Purpose |
+|------|---------|
+| `benchmark_current_test.go` | Canonical current comparison |
+| `benchmark-current.txt` | Latest raw benchmark snapshot |
+| `benchmark_test.go` | Historical and exploratory benchmarks |
+| `v1` through `v12` | Historical implementation copies |
+| `Makefile` | Reproduction commands |
 
-🔥 **Overall, V7 and V9 stand out as the best-balanced options for both write speed and retrieval performance!**  
+The current benchmark imports the local `gocache` checkout through the
+development `replace` directive in `go.mod`. This keeps the benchmark pointed
+at the exact local source being evaluated. For a clean external checkout,
+replace it with a published `gocache` version before running the benchmark.
 
-## ⚖️ Overall Trade-Offs  
+## Contributing
 
-Every cache implementation has **its own strengths and weaknesses**:  
+Contributions are welcome, especially new benchmark implementations and
+reproducible workload improvements.
 
-✅ **Optimized for Reads** → Some caches prioritize fast retrieval speeds.  
-🚀 **High Write Throughput** → Others are designed to handle massive insertions efficiently.  
-🔥 **Balanced Performance** → **V7 and V9** strike a great balance between **read and write speeds**.  
+1. Fork this repository and create a focused branch.
+2. Add the implementation to `benchmark_current_test.go` only when it follows
+   the same key, payload, TTL and validation rules as the current suite.
+3. Keep experimental or historical versions outside the current comparison.
+4. Run `go test ./...` and at least one complete `BenchmarkCurrent` execution.
+5. Include the machine, Go version, command and raw output in the pull request.
 
-💡 **Choosing the right cache depends on your workload needs!**  
+Do not interpret a single benchmark run as a universal ranking. Changes to
+payload shape, TTL, cache capacity, asynchronous write handling or key
+distribution must be documented because they can change the result materially.
 
----
+## Related Project: gocache
 
-## 🤝 Contributing  
+[github.com/jeffotoni/gocache](https://github.com/jeffotoni/gocache) is the
+source project for the implementations measured here.
 
-Want to **enhance this benchmark suite**? Follow these simple steps:  
+It contains:
 
-1️⃣ **Fork this repo** and add your own cache tests or custom versions.  
-2️⃣ **Submit a Pull Request (PR)** with your improvements or questions.  
-3️⃣ **Join the discussion** by opening an issue to suggest new features or optimizations.  
+- The safe `New` API, which is the recommended default and preserves exact key
+  isolation when hashes collide.
+- The explicit `NewFast` API, which keeps the legacy hash-only behavior for
+  callers that prioritize lower overhead and accept collision risk.
+- Typed cache constructors, capacity limits, statistics and expiration
+  handling.
+- API documentation, tests and the current benchmark comparison graph.
 
-Your contributions are always welcome! 🚀✨  
+The benchmark repository measures behavior; the related project owns the cache
+implementation and its public API. When the implementation changes, update
+the local `replace` target or the published module version before collecting a
+new benchmark snapshot.
 
----
+## License
 
-## 🔗 Related Projects  
-
-This benchmark compares the following caching solutions:  
-
-✅ [**jeffotoni/gocache**](https://github.com/jeffotoni/gocache) – Custom high-performance cache versions (V1–V9).  
-✅ [**patrickmn/go-cache**](https://github.com/patrickmn/go-cache) – Lightweight in-memory cache with expiration.  
-✅ [**coocood/freecache**](https://github.com/coocood/freecache) – High-speed cache optimized for low GC overhead.  
-
-📌 If you know another cache worth benchmarking, feel free to suggest it!  
-
----
-
-## 📜 License  
-
-This project is **open-source** under the **MIT License**.  
-
-💡 Feel free to **fork, modify, and experiment** with these benchmarks in your own applications or libraries.  
-🔬 The goal is to **help developers choose the best in-memory cache** for their needs.  
-
-🚀 **Happy benchmarking!**
+This project is released under the MIT License.

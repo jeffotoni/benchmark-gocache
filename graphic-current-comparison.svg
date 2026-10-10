@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1660" viewBox="0 0 1280 1660" role="img" aria-labelledby="title desc">
+  <title id="title">Current cache benchmark comparison</title>
+  <desc id="desc">Vertical comparison of gocache New, gocache NewFast, go-cache, freecache, ristretto and bigcache across Set, Set/Get, Get hit and Get miss.</desc>
+  <rect width="1280" height="1660" fill="#f5f7fb"/>
+  <text x="60" y="54" fill="#17202a" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="30" font-weight="700">Current cache benchmark</text>
+  <text x="60" y="84" fill="#5b6573" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="16">Same workload | 10-minute TTL | Apple M3 Max | lower ns/op is better</text>
+
+  <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="14" fill="#17202a">
+    <rect x="60" y="108" width="16" height="16" rx="3" fill="#2563eb"/><text x="84" y="121">gocache New</text>
+    <rect x="220" y="108" width="16" height="16" rx="3" fill="#f97316"/><text x="244" y="121">gocache NewFast</text>
+    <rect x="425" y="108" width="16" height="16" rx="3" fill="#16a34a"/><text x="449" y="121">go-cache</text>
+    <rect x="565" y="108" width="16" height="16" rx="3" fill="#0891b2"/><text x="589" y="121">freecache</text>
+    <rect x="710" y="108" width="16" height="16" rx="3" fill="#a855f7"/><text x="734" y="121">ristretto</text>
+    <rect x="850" y="108" width="16" height="16" rx="3" fill="#475569"/><text x="874" y="121">bigcache</text>
+  </g>
+
+  <g fill="#ffffff" stroke="#dbe2ea" stroke-width="1">
+    <rect x="60" y="145" width="1160" height="335" rx="12"/>
+    <rect x="60" y="515" width="1160" height="335" rx="12"/>
+    <rect x="60" y="885" width="1160" height="335" rx="12"/>
+    <rect x="60" y="1255" width="1160" height="335" rx="12"/>
+  </g>
+
+  <g fill="#17202a" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif">
+    <text x="85" y="181" font-size="21" font-weight="700">1. Set</text>
+    <text x="85" y="204" font-size="13" fill="#687384">scale: 0-300 ns/op</text>
+    <text x="85" y="551" font-size="21" font-weight="700">2. Set/Get</text>
+    <text x="85" y="574" font-size="13" fill="#687384">scale: 0-1100 ns/op</text>
+    <text x="85" y="921" font-size="21" font-weight="700">3. Get hit</text>
+    <text x="85" y="944" font-size="13" fill="#687384">scale: 0-120 ns/op</text>
+    <text x="85" y="1291" font-size="21" font-weight="700">4. Get miss</text>
+    <text x="85" y="1314" font-size="13" fill="#687384">scale: 0-45 ns/op</text>
+  </g>
+
+  <g stroke="#e5eaf0" stroke-width="1">
+    <path d="M250 218V448 M630 218V448 M1010 218V448"/>
+    <path d="M250 588V818 M630 588V818 M1010 588V818"/>
+    <path d="M250 958V1188 M630 958V1188 M1010 958V1188"/>
+    <path d="M250 1328V1558 M630 1328V1558 M1010 1328V1558"/>
+  </g>
+  <g fill="#8a94a3" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" text-anchor="middle">
+    <text x="250" y="463">0</text><text x="630" y="463">150</text><text x="1010" y="463">300</text>
+    <text x="250" y="833">0</text><text x="630" y="833">550</text><text x="1010" y="833">1100</text>
+    <text x="250" y="1203">0</text><text x="630" y="1203">60</text><text x="1010" y="1203">120</text>
+    <text x="250" y="1573">0</text><text x="630" y="1573">22.5</text><text x="1010" y="1573">45</text>
+  </g>
+
+  <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="12" fill="#43505f">
+    <text x="85" y="234">New</text><text x="85" y="269">NewFast</text><text x="85" y="304">go-cache</text><text x="85" y="339">freecache</text><text x="85" y="374">ristretto</text><text x="85" y="409">bigcache</text>
+    <text x="85" y="604">New</text><text x="85" y="639">NewFast</text><text x="85" y="674">go-cache</text><text x="85" y="709">freecache</text><text x="85" y="744">ristretto</text><text x="85" y="779">bigcache</text>
+    <text x="85" y="974">New</text><text x="85" y="1009">NewFast</text><text x="85" y="1044">go-cache</text><text x="85" y="1079">freecache</text><text x="85" y="1114">ristretto</text><text x="85" y="1149">bigcache</text>
+    <text x="85" y="1344">New</text><text x="85" y="1379">NewFast</text><text x="85" y="1414">go-cache</text><text x="85" y="1449">freecache</text><text x="85" y="1484">ristretto</text><text x="85" y="1519">bigcache</text>
+  </g>
+
+  <g>
+    <rect x="250" y="224" width="210.23" height="14" rx="3" fill="#2563eb"/><text x="470" y="235" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#2563eb">82.90</text>
+    <rect x="250" y="259" width="176.37" height="14" rx="3" fill="#f97316"/><text x="436" y="270" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#f97316">69.49</text>
+    <rect x="250" y="294" width="149.21" height="14" rx="3" fill="#16a34a"/><text x="409" y="305" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#16a34a">58.85</text>
+    <rect x="250" y="329" width="143.49" height="14" rx="3" fill="#0891b2"/><text x="403" y="340" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#0891b2">56.72</text>
+    <rect x="250" y="364" width="732.13" height="14" rx="3" fill="#a855f7"/><text x="992" y="375" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#a855f7">289.0</text>
+    <rect x="250" y="399" width="299.09" height="14" rx="3" fill="#475569"/><text x="559" y="410" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#475569">118.3</text>
+
+    <rect x="250" y="594" width="90.58" height="14" rx="3" fill="#2563eb"/><text x="350" y="605" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#2563eb">131.1</text>
+    <rect x="250" y="629" width="78.90" height="14" rx="3" fill="#f97316"/><text x="339" y="640" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#f97316">114.2</text>
+    <rect x="250" y="664" width="66.36" height="14" rx="3" fill="#16a34a"/><text x="326" y="675" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#16a34a">96.05</text>
+    <rect x="250" y="699" width="84.75" height="14" rx="3" fill="#0891b2"/><text x="345" y="710" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#0891b2">122.8</text>
+    <rect x="250" y="734" width="729.64" height="14" rx="3" fill="#a855f7"/><text x="989" y="745" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#a855f7">1057</text>
+    <rect x="250" y="769" width="105.41" height="14" rx="3" fill="#475569"/><text x="366" y="780" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#475569">152.6</text>
+
+    <rect x="250" y="964" width="365.65" height="14" rx="3" fill="#2563eb"/><text x="625" y="975" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#2563eb">57.74</text>
+    <rect x="250" y="999" width="341.03" height="14" rx="3" fill="#f97316"/><text x="601" y="1010" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#f97316">53.90</text>
+    <rect x="250" y="1034" width="255.68" height="14" rx="3" fill="#16a34a"/><text x="516" y="1045" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#16a34a">40.37</text>
+    <rect x="250" y="1069" width="473.28" height="14" rx="3" fill="#0891b2"/><text x="734" y="1080" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#0891b2">74.86</text>
+    <rect x="250" y="1104" width="679.53" height="14" rx="3" fill="#a855f7"/><text x="940" y="1115" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#a855f7">107.4</text>
+    <rect x="250" y="1139" width="371.45" height="14" rx="3" fill="#475569"/><text x="633" y="1150" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#475569">58.65</text>
+
+    <rect x="250" y="1334" width="223.63" height="14" rx="3" fill="#2563eb"/><text x="484" y="1345" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#2563eb">13.23</text>
+    <rect x="250" y="1369" width="192.36" height="14" rx="3" fill="#f97316"/><text x="453" y="1380" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#f97316">11.40</text>
+    <rect x="250" y="1404" width="65.35" height="14" rx="3" fill="#16a34a"/><text x="326" y="1415" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#16a34a">3.870</text>
+    <rect x="250" y="1439" width="266.72" height="14" rx="3" fill="#0891b2"/><text x="527" y="1450" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#0891b2">15.78</text>
+    <rect x="250" y="1474" width="658.84" height="14" rx="3" fill="#a855f7"/><text x="920" y="1485" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#a855f7">39.01</text>
+    <rect x="250" y="1509" width="296.96" height="14" rx="3" fill="#475569"/><text x="558" y="1520" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="11" fill="#475569">17.59</text>
+  </g>
+
+  <text x="60" y="1630" fill="#687384" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="13">Source: benchmark-current.txt | ristretto uses SetWithTTL and Wait() for confirmed Set/Get visibility.</text>
+</svg>
